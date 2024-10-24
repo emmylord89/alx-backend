@@ -1,34 +1,28 @@
 
-#!/usr/bin/yarn dev
-import { Queue, Job } from 'kue';
-
+#!/usr/bin/node
 /**
- * Creates push notification jobs from the array of jobs info.
- * @param {Job[]} jobs
- * @param {Queue} queue
+ * Writing the job creation function
  */
-export const createPushNotificationsJobs = (jobs, queue) => {
+function createPushNotificationsJobs(jobs, queue) {
   if (!(jobs instanceof Array)) {
     throw new Error('Jobs is not an array');
   }
-  for (const jobInfo of jobs) {
-    const job = queue.create('push_notification_code_3', jobInfo);
-
+  for (let job of jobs) {
+    job = queue.create('push_notification_code_3', job);
     job
-      .on('enqueue', () => {
-        console.log('Notification job created:', job.id);
+      .on('complete', (result) => { /* eslint-disable-line no-unused-vars */
+        console.log(`Notification job ${job.id} completed`);
       })
-      .on('complete', () => {
-        console.log('Notification job', job.id, 'completed');
+      .on('failed', (err) => { /* eslint-disable-line no-unused-vars */
+        console.log(`Notification job ${job.id} failed: ${err.message || err.toString()}`);
       })
-      .on('failed', (err) => {
-        console.log('Notification job', job.id, 'failed:', err.message || err.toString());
+      .on('progress', (progress, data) => { /* eslint-disable-line no-unused-vars */
+        console.log(`Notification job ${job.id} ${progress}% complete`);
       })
-      .on('progress', (progress, _data) => {
-        console.log('Notification job', job.id, `${progress}% complete`);
+      .save((err) => { /* eslint-disable-line no-unused-vars */
+        console.log(`Notification job created: ${job.id}`);
       });
-    job.save();
   }
-};
+}
 
-export default createPushNotificationsJobs;
+module.exports = createPushNotificationsJobs;

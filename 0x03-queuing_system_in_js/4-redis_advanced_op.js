@@ -1,5 +1,8 @@
 
-#!/usr/bin/yarn dev
+#!/usr/bin/node
+/**
+ * Connect to redis server via redis client
+ */
 import { createClient, print } from 'redis';
 
 const client = createClient();
@@ -8,30 +11,20 @@ client.on('error', (err) => {
   console.log('Redis client not connected to the server:', err.toString());
 });
 
-const updateHash = (hashName, fieldName, fieldValue) => {
-  client.HSET(hashName, fieldName, fieldValue, print);
-};
-
-const printHash = (hashName) => {
-  client.HGETALL(hashName, (_err, reply) => console.log(reply));
-};
-
-function main() {
-  const hashObj = {
-    Portland: 50,
-    Seattle: 80,
-    'New York': 20,
-    Bogota: 20,
-    Cali: 40,
-    Paris: 2,
-  };
-  for (const [field, value] of Object.entries(hashObj)) {
-    updateHash('HolbertonSchools', field, value);
-  }
-  printHash('HolbertonSchools');
-}
-
 client.on('connect', () => {
   console.log('Redis client connected to the server');
-  main();
+});
+
+client
+  .MULTI()
+  .HSET('HolbertonSchools', 'Portland', 50, print)
+  .HSET('HolbertonSchools', 'Seattle', 80, print)
+  .HSET('HolbertonSchools', 'New York', 20, print)
+  .HSET('HolbertonSchools', 'Bogota', 20, print)
+  .HSET('HolbertonSchools', 'Cali', 40, print)
+  .HSET('HolbertonSchools', 'Paris', 2, print)
+  .EXEC();
+
+client.HGETALL('HolbertonSchools', (err, hashset) => {
+  console.log(hashset);
 });

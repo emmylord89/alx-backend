@@ -1,38 +1,33 @@
 
-#!/usr/bin/yarn dev
-import { createQueue, Job } from 'kue';
+#!/usr/bin/node
+/**
+ * Track progress and errors with Kue: Create the Job processor
+ */
+import { createQueue } from 'kue';
 
-const BLACKLISTED_NUMBERS = ['4153518780', '4153518781'];
+const blacklist = ['4153518780', '4153518781'];
+
 const queue = createQueue();
 
-/**
- * Sends a push notification to a user.
- * @param {String} phoneNumber
- * @param {String} message
- * @param {Job} job
- * @param {*} done
- */
-const sendNotification = (phoneNumber, message, job, done) => {
-  let total = 2, pending = 2;
-  let sendInterval = setInterval(() => {
-    if (total - pending <= total / 2) {
-      job.progress(total - pending, total);
+function sendNotification(phoneNumber, message, job, done) {
+  const total = 100;
+  function next(p) {
+    if (p === 0 || p === (total / 2)) {
+      job.progress(p, total);
+      if (p === (total / 2)) {
+        console.log(`Sending notification to ${phoneNumber}, with message: ${message}`);
+      }
     }
-    if (BLACKLISTED_NUMBERS.includes(phoneNumber)) {
-      done(new Error(`Phone number ${phoneNumber} is blacklisted`));
-      clearInterval(sendInterval);
-      return;
+    if (blacklist.includes(job.data.phoneNumber)) {
+      return done(new Error(`Phone number ${job.data.phoneNumber} is blacklisted`));
     }
-    if (total === pending) {
-      console.log(
-        `Sending notification to ${phoneNumber},`,
-        `with message: ${message}`,
-      );
+    if (p === total) {
+      return done();
     }
-    --pending || done();
-    pending || clearInterval(sendInterval);
-  }, 1000);
-};
+    return next(p + 1);
+  }
+  next(0);
+}
 
 queue.process('push_notification_code_2', 2, (job, done) => {
   sendNotification(job.data.phoneNumber, job.data.message, job, done);

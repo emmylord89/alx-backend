@@ -1,5 +1,7 @@
-
-#!/usr/bin/yarn dev
+#!/usr/bin/node
+/**
+ * Connect to redis server via redis client
+ */
 import { createClient } from 'redis';
 
 const client = createClient();
